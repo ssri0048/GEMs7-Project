@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GEMs#7 Project</title>
+
+  <!-- ฟอนต์: Orbitron หัวข้อ / Rajdhani เนื้อหา / Share Tech Mono ตัวเลข -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    /* ===== ตัวแปรสี global ===== */
+    :root {
+      --cyan: #00d4ff;
+      /* สีหลัก: หัวข้อ/ไฮไลต์/ขอบเน้น */
+      --cyan-dim: #0099bb;
+      /* ฟ้าหม่น: ข้อความรอง/ไอคอน */
+      --cyan-dark: #002a38;
+      /* ฟ้าเข้ม: เงา/พื้นในกล่อง */
+      --glow: rgba(0, 212, 255, .18);
+      /* แสงฟ้าจาง: gradient ทับกล่อง */
+      --glow-md: rgba(0, 212, 255, .35);
+      --bg: #010c11;
+      /* พื้นหลังทั้งหน้า */
+      --bg2: #040f16;
+      --panel: rgba(2, 18, 28, .90);
+      /* พื้นกล่อง */
+      --border: rgba(0, 212, 255, .22);
+      /* ขอบกล่องปกติ */
+      --border-hi: rgba(0, 212, 255, .55);
+      /* ขอบเน้น/ไอคอน */
+      --text: #c6edf7;
+      /* ตัวอักษรหลัก */
+      --text-dim: rgba(198, 237, 247, .45);
+      /* ตัวอักษรจาง: label */
+      --white: #e8f8ff;
+      /* เด่นสุด: ชื่อ/หัวข้อใหญ่ */
+      --green: #00ff9f;
+      /* เขียว: badge VERIFIED / LED ปกติ */
+      --amber: #ffb700;
+      /* เหลือง: LED เตือน */
+    }
+
+    /* โหมดสว่าง (ปุ่มธีม toggle .light บน body) */
+    body.light {
+      --bg: #e8f4f8;
+      --bg2: #d0eaf4;
+      --panel: rgba(220, 242, 252, .95);
+      --border: rgba(0, 140, 180, .30);
+      --border-hi: rgba(0, 140, 180, .70);
+      --text: #0a3040;
+      --text-dim: rgba(10, 48, 64, .50);
+      --white: #021820;
+      --cyan: #007aaa;
+      --cyan-dim: #005577;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* reset */
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background .4s, color .4s;
+    }
+
+    /* พื้นหลัง HUD */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(0, 212, 255, .04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, .04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    body.light .grid-bg { opacity: 0.05; }
+    body.light .scanline { display: none; }
+
+    /* เส้นสแกนวิ่งจากบนลงล่าง (HUD) */
+    @keyframes scan { 0% { top: -6px } 100% { top: 100vh } }
+    .scanline {
+      position: fixed; left: 0; width: 100%; height: 6px; z-index: 1; pointer-events: none;
+      background: linear-gradient(transparent, rgba(0, 212, 255, .10), transparent);
+      animation: scan 7s linear infinite;
+    }
+
+    /* กรอบมุม 4 มุมแบบ HUD */
+    .cbr { position: fixed; width: 36px; height: 36px; border-color: var(--cyan-dim);
+           border-style: solid; opacity: .45; z-index: 5; pointer-events: none; }
+    .cbr.tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+    .cbr.tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+    .cbr.bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+    .cbr.br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+
+    .wrap {
+      position: relative;
+      z-index: 2;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 36px 20px 48px;
+    }
+
+    /* topbar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 28px;
+    }
+
+    .topbar-brand {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: .12em;
+    }
+
+    .topbar-clock {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      gap: 8px;
+    }
+
+    .topbar-sep {
+      opacity: .4;
+    }
+
+    .theme-switch-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+
+    .mode-lbl.active {
+      color: var(--cyan);
+    }
+
+    .ts-track {
+      width: 44px;
+      height: 22px;
+      border: 1px solid var(--border-hi);
+      background: rgba(0, 212, 255, .06);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .ts-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      transition: transform .3s;
+    }
+
+    body.light .ts-thumb {
+      transform: translateX(22px);
+    }
+
+    /* hero: รูปซ้าย 220px / ขวายืด */
+    .hero {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+      margin-bottom: 22px;
+      align-items: stretch;
+    }
+
+    .avatar-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .avatar-frame {
+      width: 220px;
+      aspect-ratio: 3 / 4;
+
+      background: linear-gradient(180deg, #031a27, #010c11);
+
+      overflow: hidden;
+
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.light .avatar-frame {
+      background: linear-gradient(180deg, #c0dcea, #aad0e0);
+    }
+
+    /* reticle = วงแหวนเป้าเล็ง 3 วง เต้นจังหวะ (HUD ซ้อนหลังรูป) */
+    .reticle {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring {
+      position: absolute;
+      border: 1px solid rgba(0, 212, 255, .18);
+      border-radius: 50%;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    .ring:nth-child(1) {
+      width: 70px;
+      height: 70px;
+    }
+
+    .ring:nth-child(2) {
+      width: 120px;
+      height: 120px;
+      animation-delay: .6s;
+    }
+
+    .ring:nth-child(3) {
+      width: 170px;
+      height: 170px;
+      animation-delay: 1.2s;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: .12;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .45;
+        transform: scale(1.04);
+      }
+    }
+
+    .cross {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+    }
+
+    .cross::before,
+    .cross::after {
+      content: '';
+      position: absolute;
+      background: rgba(0, 212, 255, .50);
+    }
+
+    .cross::before {
+      width: 1px;
+      height: 100%;
+      left: 50%;
+      top: 0;
+    }
+
+    .cross::after {
+      width: 100%;
+      height: 1px;
+      top: 50%;
+      left: 0;
+    }
+
+    .avatar-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* รูปเต็มกรอบทั้งภาพ ไม่บิดเบี้ยว */
+      object-position: top;
+      display: block;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* placeholder รูปคน (CSS) — โผล่เมื่อรูปจริงโหลดไม่ได้ (onerror) */
+    .fig {
+      width: 100px;
+      height: 160px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .fig-head {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0a3040, #0d4560);
+      border: 2px solid var(--cyan-dim);
+      margin: 0 auto 5px;
+      box-shadow: 0 0 18px rgba(0, 212, 255, .22);
+      position: relative;
+    }
+
+    .fig-head::after {
+      content: '';
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 212, 255, .25);
+    }
+
+    .fig-body {
+      width: 72px;
+      height: 100px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, #0a3040, #020c10);
+      border: 1px solid var(--cyan-dark);
+      clip-path: polygon(12% 0%, 88% 0%, 100% 8%, 100% 100%, 0 100%, 0 8%);
+      position: relative;
+      box-shadow: 0 0 24px rgba(0, 212, 255, .08) inset;
+    }
+
+    .fig-body::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26px;
+      height: 2px;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+    }
+
+    .avatar-meta {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .avatar-id {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: .15em;
+      margin-bottom: 3px;
+    }
+
+    .avatar-class {
+      font-family: 'Orbitron', monospace;
+      font-size: 10px;
+      color: var(--cyan);
+    }
+
+    .id-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+
+    .qstats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+    }
+
+    .qs {
+      background: var(--panel);
+      text-align: center;
+      padding: 14px 6px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 18px;
+    }
+
+    .ph {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 212, 255, .04);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .ph-icon {
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--border-hi);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: var(--cyan);
+    }
+
+    .ph-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--cyan);
+      letter-spacing: .18em;
+    }
+
+    .ph-num {
+      margin-left: auto;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      color: var(--text-dim);
+    }
+
+    .pb {
+      padding: 14px;
+      flex: 1;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    /* main = 2 คอลัมน์ / bottom = 3 คอลัมน์ */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+      align-items: stretch;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+      align-items: stretch;
+    }
+
+    /* closing quote: กึ่งกลาง ไม่มีกรอบ */
+    .closing-quote {
+      margin: 48px auto 32px;
+      text-align: center;
+      max-width: 680px;
+      padding: 0 20px;
+    }
+
+    .cq-mark {
+      font-family: 'Orbitron', monospace;
+      font-size: 72px;
+      line-height: 1;
+      color: var(--cyan);
+      opacity: .12;
+      margin-bottom: -24px;
+    }
+
+    .cq-text {
+      font-size: 18px;
+      color: var(--text-dim);
+      line-height: 1.75;
+      font-style: italic;
+      min-height: 52px;
+    }
+
+    .cq-author {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--cyan);
+      letter-spacing: .18em;
+      margin-top: 14px;
+      opacity: .7;
+    }
+
+    .cq-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      padding: 6px 14px;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+
+    /* footer */
+    .footer {
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* ===== IDENTITY: ชื่อ / ตำแหน่ง / bio ===== */
+    .lbl {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: .25em;
+      margin-bottom: 6px;
+    }
+
+    .name {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--white);
+      text-shadow: 0 0 28px rgba(0, 212, 255, .40);
+      letter-spacing: .04em;
+      line-height: 1;
+      margin-bottom: 5px;
+      cursor: default;
+    }
+
+    @keyframes glitch {
+
+      0%,
+      100% {
+        text-shadow: 0 0 28px rgba(0, 212, 255, .40);
+        transform: none
+      }
+
+      25% {
+        text-shadow: -2px 0 #ff4060, 2px 0 var(--cyan);
+        transform: translateX(-1px)
+      }
+
+      75% {
+        text-shadow: 2px 0 var(--cyan), -2px 0 #b400ff;
+        transform: translateX(1px)
+      }
+    }
+
+    .name:hover {
+      animation: glitch .4s ease;
+    }
+
+    .title-line {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .bio {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.65;
+      max-width: 100%;        /* ข้อความเต็มความกว้างกล่อง */
+      text-align: justify;    /* จัดขอบซ้าย-ขวาเสมอกัน พอดีกล่อง */
+    }
+
+    #btnMore {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      background: transparent;
+      border: 1px solid var(--border-hi);
+      color: var(--cyan);
+      padding: 6px 16px;
+      cursor: pointer;
+      letter-spacing: .12em;
+      transition: all .2s;
+      margin-top: 12px;
+      display: inline-block;
+    }
+
+    #btnMore:hover {
+      background: var(--glow);
+      box-shadow: 0 0 10px var(--glow-md);
+    }
+
+    #extraInfo {
+      display: none;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      background: rgba(0, 212, 255, .04);
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-dim);
+    }
+
+    #extraInfo.show {
+      display: block;
+    }
+
+    /* quick-stats ตัวเลขใหญ่ */
+    .qs-val {
+      font-family: 'Orbitron', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cyan);
+      display: block;
+      text-shadow: 0 0 10px rgba(0, 212, 255, .45);
+    }
+
+    .qs-lbl {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      color: var(--text-dim);
+      letter-spacing: .13em;
+      margin-top: 3px;
+      display: block;
+    }
+
+    /* ===== STAT BARS (CORE ATTRIBUTE) ===== */
+    .srow {
+      display: grid;
+      grid-template-columns: 96px 1fr 34px;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 10px;
+    }
+
+    .srow:last-child {
+      margin-bottom: 0;
+    }
+
+    .slbl {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: .10em;
+    }
+
+    .strack {
+      height: 5px;
+      background: rgba(0, 212, 255, .08);
+      border: 1px solid rgba(0, 212, 255, .12);
+    }
+
+    .sfill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+      box-shadow: 0 0 7px rgba(0, 212, 255, .50);
+      width: 0;
+      transition: width 1.4s cubic-bezier(.4, 0, .2, 1);
+      position: relative;
+    }
+
+    .sfill::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: -2px;
+      bottom: -2px;
+      width: 2px;
+      background: #fff;
+      box-shadow: 0 0 5px var(--cyan);
+    }
+
+    .sval {
+      font-family: 'Orbitron', monospace;
+      font-size: 10px;
+      color: var(--cyan);
+      text-align: right;
+    }
+
+    /* ===== RADAR SVG ===== */
+    .radar-wrap { display: flex; align-items: center; justify-content: center; padding: 8px 0; }
+    .radar-wrap svg text { font-family: 'Share Tech Mono', monospace; font-size: 8px; fill: var(--text-dim); }
+
+    /* ===== EXPERIENCE TIMELINE ===== */
+    .exp-dot-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 4px;
+      width: 16px;
+      flex-shrink: 0;
+    }
+
+    .exp-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan-dim);
+      border: 1px solid var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .exp-dot.now {
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+    }
+
+    .exp-line {
+      width: 1px;
+      flex: 1;
+      min-height: 18px;
+      background: var(--border);
+      margin-top: 4px;
+    }
+
+    .logrow {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: start;
+    }
+
+    .logrow:last-child {
+      margin-bottom: 0;
+    }
+
+    .exp-body {
+      padding-bottom: 2px;
+    }
+
+    .exp-year {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--cyan);
+      letter-spacing: .12em;
+      margin-bottom: 3px;
+      opacity: .8;
+    }
+
+    .logtitle {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+
+    .logorg {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: .08em;
+    }
+
+    .exp-toggle {
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--cyan-dim);
+      cursor: pointer;
+      margin-top: 5px;
+      letter-spacing: .08em;
+      display: block;
+      transition: color .2s;
+    }
+
+    .exp-toggle:hover {
+      color: var(--cyan);
+    }
+
+    .exp-extra {
+      display: none;
+      margin-top: 7px;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      border-left: 2px solid var(--border);
+      padding-left: 10px;
+    }
+
+    .exp-extra.open {
+      display: block;
+    }
+
+    /* ===== EDUCATION ===== */
+    .edu-item {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .edu-year {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+      padding-top: 3px;
+      letter-spacing: .05em;
+    }
+
+    .edu-degree {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.3;
+      margin-bottom: 3px;
+    }
+
+    .edu-school {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .edu-country {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .logdiv {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
+
+    .edu-projects {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .edu-proj-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--cyan);
+      letter-spacing: .15em;
+      margin-bottom: 7px;
+      opacity: .7;
+    }
+
+    .edu-proj-item {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      text-decoration: none;
+      padding: 5px 8px;
+      margin-bottom: 3px;
+      border: 1px solid transparent;
+      transition: all .2s;
+    }
+
+    .edu-proj-item:hover {
+      border-color: var(--border);
+      background: rgba(0, 212, 255, .05);
+    }
+
+    .edu-proj-icon {
+      font-size: 10px;
+      color: var(--cyan);
+      flex-shrink: 0;
+      opacity: .6;
+      transition: opacity .2s;
+    }
+
+    .edu-proj-item:hover .edu-proj-icon {
+      opacity: 1;
+    }
+
+    .edu-proj-name {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .edu-proj-item:hover .edu-proj-name {
+      color: var(--white);
+    }
+
+    /* ===== CERTIFICATIONS ===== */
+    .cert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .cert {
+      display: flex;
+      align-items: flex-start;       /* ชิดบน เผื่อชื่อคอร์สตัด 2 บรรทัด */
+      gap: 10px;
+      padding: 10px 12px 10px 14px;
+      border: 1px solid rgba(0, 212, 255, .15);
+      background: rgba(0, 212, 255, .03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cert::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--cyan);
+      box-shadow: 0 0 7px var(--cyan);
+    }
+
+    .cert-info {
+      flex: 1;
+      min-width: 0;                  /* ให้ข้อความ wrap ได้ ไม่ดันกล่อง */
+    }
+
+    .cert-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.35;
+    }
+
+    .cert-sub {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: .06em;
+      margin-top: 4px;
+    }
+
+    .cert-ok {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      color: var(--green);
+      border: 1px solid rgba(0, 255, 159, .28);
+      padding: 2px 6px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+
+    /* ===== GETTING TO KNOW ME ===== */
+    .flavor-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .flavor-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+      padding-top: 1px;
+    }
+
+    .flavor-body {
+      flex: 1;
+    }
+
+    .flavor-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--cyan);
+      letter-spacing: .14em;
+      margin-bottom: 6px;
+      opacity: .75;
+    }
+
+    .flavor-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .ftag {
+      font-size: 11px;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      background: rgba(0, 212, 255, .03);
+      transition: all .2s;
+    }
+
+    .ftag:hover {
+      border-color: var(--cyan);
+      color: var(--white);
+      background: rgba(0, 212, 255, .08);
+    }
+
+    .flavor-div {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
+
+    /* ===== CONTACT ===== */
+    .crow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .crow:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .cico {
+      width: 26px;
+      height: 26px;
+      border: 1px solid rgba(0, 212, 255, .28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .clbl {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 8px;
+      color: var(--text-dim);
+      letter-spacing: .10em;
+    }
+
+    .cval {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 1px;
+    }
+
+    /* responsive: จอแคบ → ทุกกริดเหลือคอลัมน์เดียว */
+    @media (max-width:780px) {
+
+      .hero,
+      .main-grid,
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- พื้นหลังตกแต่ง HUD: กริด + เส้นสแกน + กรอบมุม 4 มุม -->
+  <div class="grid-bg"></div>
+  <div class="scanline"></div>
+  <div class="cbr tl"></div>
+  <div class="cbr tr"></div>
+  <div class="cbr bl"></div>
+  <div class="cbr br"></div>
+
+  <div class="wrap">
+
+    <!-- TOPBAR (นาฬิกา + ปุ่มสลับสี รอ JS ) -->
+    <div class="topbar">
+      <span class="topbar-brand"> GEMs#7 · SASIWIPHA'S PROFILE</span>
+      <span class="topbar-clock"><span id="fDate">--</span><span class="topbar-sep">·</span><span
+          id="clock">--:--:--</span></span>
+      <div class="theme-switch-wrap"><span class="mode-lbl active" id="lblDark">Dark</span>
+        <div class="ts-track" onclick="toggleTheme()">
+          <div class="ts-thumb"></div>
+        </div><span class="mode-lbl" id="lblLight">Light</span>
+      </div>
+    </div>
+
+    <!-- HERO: avatar(220px) + identity -->
+    <div class="hero">
+      <div class="avatar-panel">
+        <div class="avatar-frame">
+          <div class="reticle">
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="cross"></div>
+          </div>
+          <img id="avatarImg" src="assets/pic1.png" alt="Profile Picture"
+            onerror="this.style.display='none'; document.getElementById('avatarFig').style.display='block';">
+          <div id="avatarFig" class="fig" style="display:none;">
+            <div class="fig-head"></div>
+            <div class="fig-body"></div>
+          </div>
+        </div>
+        <div class="avatar-meta">
+          <div class="avatar-id"> SASIWIPHA · 508263 </div>
+          <div class="avatar-class"> PROGRAMMER LEVEL 7 </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;">
+        <div class="id-box">
+          <div class="name">SASIWIPHA SRIKUEAKUN</div>
+          <div class="title-line">นรค.7 ฝตท. สตภ. </div>
+          <div class="bio">
+            ปัจจุบันดำรงตำแหน่ง นักวิเคราะห์ระบบคอมพิวเตอร์
+            โดยรับผิดชอบงานด้านสนับสนุนเทคโนโลยีการตรวจสอบภายใน ไม่ว่าจะเป็นการพัฒนาระบบเพื่อลดภาระงานซ้ำซ้อนในกระบวนการเตรียมข้อมูล
+            การทำความเข้าใจและวิเคราะห์ข้อมูล (Data
+            Analytics) การพัฒนา Machine Learning ช่วยในการหาความเสี่ยงล่วงหน้า
+            รวมถึงการพัฒนาเครื่องมือที่ช่วยสนับสนุนผู้ตรวจสอบภายในและผู้บริหารในการตัดสินใจ
+            นอกจากความถนัดด้านการวิเคราะห์ข้อมูลเชิงลึกแล้ว...
+          </div>
+          <button id="btnMore" onclick="toggleExtra()">[ + ดูข้อมูลเพิ่มเติม ]</button>
+          <div id="extraInfo">
+            นอกจากความถนัดด้านการวิเคราะห์ข้อมูลเชิงลึกแล้ว ด้วยประสบการณ์กว่า 5 ปีในบทบาท นักตรวจสอบภายใน
+            ทำให้มีความเข้าใจอย่างลึกซึ้งในด้านกระบวนการธุรกิจ (Business Process), การบริหารจัดการ (Management)
+            และการบริหารความเสี่ยง (Risk Management)
+
+            ประสบการณ์ดังกล่าวถือเป็นจุดแข็งสำคัญ ที่ช่วยให้สามารถมอง “ธุรกิจ” ควบคู่ไปกับ “เทคโนโลยี”
+            โดยมีมุมมองด้านความเสี่ยง (Risk-aware mindset)
+            ทำให้สามารถออกแบบและพัฒนาโซลูชันที่มองเห็นช่องโหว่และโอกาสในการปรับปรุงระบบได้อย่างรอบด้าน
+          </div>
+        </div>
+        <div class="qstats">
+          <div class="qs"><span class="qs-val">7+</span><span class="qs-lbl">YRS EXP</span></div>
+          <div class="qs"><span class="qs-val">Master's</span><span class="qs-lbl">DEGREE</span></div>
+          <div class="qs"><span class="qs-val">Scholarship</span><span class="qs-lbl">RECIPIENTS</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHAT'S PASSION (เต็มแถว) -->
+    <div class="panel">
+      <div class="ph">
+        <div class="ph-icon">✦</div><span class="ph-title"> What's passion ? </span>
+      </div>
+      <div class="pb" style="font-size:15px; line-height:1.75; color:var(--text);">
+        <strong style="color:var(--cyan)"> เชื่อมมุมมองธุรกิจสู่การสร้าง Digital Product </strong>
+        ลักษณะงานปัจจุบันที่มุ่งเน้น Data Analytics และการพัฒนาเครื่องมือสนับสนุนการวิเคราะห์ข้อมูล
+        ทำให้โอกาสในการพัฒนา digital product ในระดับที่ต่อยอดในนามองค์กรยังค่อนข้างจำกัด GEMs#7
+        จึงเป็นโอกาสสำคัญที่น่าสนใจเป็นพิเศษ เพราะเปิดทางสู่การพัฒนาธุรกิจใหม่ขององค์กร (PEA Startup)
+        ซึ่งตรงกับพื้นฐานด้าน Business Analytics ที่สำเร็จการศึกษาระดับปริญญาโทมาโดยตรง หากได้รับโอกาสนี้
+        เชื่อว่าจะเชื่อมมุมมองเชิงธุรกิจเข้ากับการพัฒนาผลิตภัณฑ์ดิจิทัล พร้อมก้าวออกจากขอบเขตเดิม
+        เพื่อเรียนรู้การพัฒนาซอฟต์แวร์ตั้งแต่ออกแบบ พัฒนา ทดสอบ ไปจนถึงส่งมอบระบบจริง
+        และต่อยอดสร้างคุณค่าให้องค์กรในระยะยาว
+      </div>
+    </div>
+
+    <!-- MAIN GRID: 2 คอลัมน์ × 4 กล่อง -->
+    <div class="main-grid">
+      <div class="panel">
+        <div class="ph">
+          <div class="ph-icon">◈</div><span class="ph-title">PROGRAMMING SKILLS &amp; OTHER TOOLS</span><span
+            class="ph-num">[01/04]</span>
+        </div>
+        <div class="pb">
+          <div class="srow"><span class="slbl">R, ShinyApp</span>
+            <div class="strack">
+              <div class="sfill" data-w="85"></div>
+            </div><span class="sval">85</span>
+          </div>
+          <div class="srow"><span class="slbl">Python</span>
+            <div class="strack">
+              <div class="sfill" data-w="80"></div>
+            </div><span class="sval">80</span>
+          </div>
+          <div class="srow"><span class="slbl">SQL</span>
+            <div class="strack">
+              <div class="sfill" data-w="75"></div>
+            </div><span class="sval">75</span>
+          </div>
+          <div class="srow"><span class="slbl">HTML</span>
+            <div class="strack">
+              <div class="sfill" data-w="70"></div>
+            </div><span class="sval">70</span>
+          </div>
+          <div class="srow"><span class="slbl">Github, VS Code</span>
+            <div class="strack">
+              <div class="sfill" data-w="80"></div>
+            </div><span class="sval">80</span>
+          </div>
+          <div class="srow"><span class="slbl">Tableau</span>
+            <div class="strack">
+              <div class="sfill" data-w="80"></div>
+            </div><span class="sval">80</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ph-icon">◉</div><span class="ph-title">COMPETENCY RADAR</span><span class="ph-num">[02/04]</span>
+        </div>
+        <div class="pb" style="overflow:visible;padding-bottom:18px;">
+          <div class="radar-wrap" style="overflow:visible;">
+            <svg width="220" height="220" viewBox="0 0 260 260"
+               xmlns="http://www.w3.org/2000/svg"
+               style="font-family:'Share Tech Mono',monospace;font-size:8px;fill:rgba(198,237,247,0.6);overflow:visible;">
+              <polygon points="113.0,130.0 119.4,116.7 133.8,113.4 145.3,122.6 145.3,137.4 133.8,146.6 119.4,143.3" fill="none" stroke="rgba(0,212,255,.05)" stroke-width="1"/>
+              <polygon points="96.0,130.0 108.8,103.4 137.6,96.9 160.6,115.3 160.6,144.7 137.6,163.1 108.8,156.6" fill="none" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+              <polygon points="79.0,130.0 98.2,90.1 141.4,80.3 176.0,107.9 176.0,152.1 141.4,179.7 98.2,169.9" fill="none" stroke="rgba(0,212,255,.11)" stroke-width="1"/>
+              <polygon points="62.0,130.0 87.6,76.9 145.2,63.7 191.3,100.5 191.3,159.5 145.2,196.3 87.6,183.1" fill="none" stroke="rgba(0,212,255,.06)" stroke-width="1" stroke-dasharray="2,3"/>
+              <line x1="130" y1="130" x2="62.0" y2="130.0" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+              <line x1="130" y1="130" x2="87.6" y2="76.9" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+              <line x1="130" y1="130" x2="145.2" y2="63.7" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+              <line x1="130" y1="130" x2="191.3" y2="100.5" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+              <line x1="130" y1="130" x2="191.3" y2="159.5" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+              <line x1="130" y1="130" x2="145.2" y2="196.3" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+              <line x1="130" y1="130" x2="87.6" y2="183.1" stroke="rgba(0,212,255,.08)" stroke-width="1"/>
+
+              <polygon points="68.8,130.0 92.7,83.2 142.9,73.7 179.0,106.4 185.1,156.5 140.3,175.1 102.4,164.5"
+                fill="rgba(0,212,255,.09)" stroke="rgba(0,212,255,.70)"
+                stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="68.8" cy="130.0" r="2.5" fill="#00d4ff" opacity="0.9"/>
+              <circle cx="92.7" cy="83.2" r="2.5" fill="#00d4ff" opacity="0.9"/>
+              <circle cx="142.9" cy="73.7" r="2.5" fill="#00d4ff" opacity="0.9"/>
+              <circle cx="179.0" cy="106.4" r="2.5" fill="#00d4ff" opacity="0.9"/>
+              <circle cx="185.1" cy="156.5" r="2.5" fill="#00d4ff" opacity="0.9"/>
+              <circle cx="140.3" cy="175.1" r="2.5" fill="#00d4ff" opacity="0.9"/>
+              <circle cx="102.4" cy="164.5" r="2.5" fill="#00d4ff" opacity="0.9"/>
+
+              <text x="56.8" y="130.0" text-anchor="middle" font-size="7" fill="rgba(0,212,255,0.6)">90</text>
+              <text x="85.2" y="73.9" text-anchor="middle" font-size="7" fill="rgba(0,212,255,0.6)">88</text>
+              <text x="145.6" y="62.0" text-anchor="middle" font-size="7" fill="rgba(0,212,255,0.6)">85</text>
+              <text x="189.8" y="101.2" text-anchor="middle" font-size="7" fill="rgba(0,212,255,0.6)">80</text>
+              <text x="196.0" y="161.7" text-anchor="middle" font-size="7" fill="rgba(0,212,255,0.6)">90</text>
+              <text x="143.0" y="186.8" text-anchor="middle" font-size="7" fill="rgba(0,212,255,0.6)">68</text>
+              <text x="94.9" y="173.9" text-anchor="middle" font-size="7" fill="rgba(0,212,255,0.6)">65</text>
+
+              <text x="34.0" y="133.0" text-anchor="end">Teamwork</text>
+              <text x="70.1" y="58.0" text-anchor="end">Communication</text>
+              <text text-anchor="start"><tspan x="151.4" y="33.4">Biz</tspan><tspan x="151.4" dy="10">Mindset</tspan></text>
+              <text text-anchor="start"><tspan x="216.5" y="85.4">Problem</tspan><tspan x="216.5" dy="10">Solving</tspan></text>
+              <text text-anchor="start"><tspan x="216.5" y="168.6">Data</tspan><tspan x="216.5" dy="10">Analytics</tspan></text>
+              <text text-anchor="start"><tspan x="151.4" y="220.6">Testing</tspan><tspan x="151.4" dy="10">&amp; Debug</tspan></text>
+              <text x="70.1" y="208.0" text-anchor="end">Full-Stack</text>
+
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ph-icon">⏱</div><span class="ph-title">EXPERIENCE</span><span class="ph-num">[03/04]</span>
+        </div>
+        <div class="pb" style="padding-top:12px;">
+
+          <div class="logrow">
+            <div class="exp-dot-col">
+              <div class="exp-dot now"></div>
+              <div class="exp-line"></div>
+            </div>
+            <div class="exp-body">
+              <div class="exp-year">Mar 2026 – Present</div>
+              <div class="logtitle">Programmer Level 7</div>
+              <div class="logorg">กทต.  ฝตท.  สตภ. </div>
+            </div>
+          </div>
+
+          <div class="logrow">
+            <div class="exp-dot-col">
+              <div class="exp-dot"></div>
+              <div class="exp-line"></div>
+            </div>
+            <div class="exp-body">
+              <div class="exp-year">Jun 2025 – Feb 2026</div>
+              <div class="logtitle">Programmer Level 6</div>
+              <div class="logorg">กทต.  ฝตท. สตภ. </div>
+              <button class="exp-toggle" onclick="toggleExp(this)">+ อ่านเพิ่มเติม</button>
+              <div class="exp-extra">
+                ได้รับการแต่งตั้งและปรับวุฒิภายหลังสำเร็จการศึกษาและกลับเข้าปฏิบัติงาน รับผิดชอบด้านวิเคราะห์ข้อมูลเชิงลึก
+                และพัฒนาเครื่องมือช่วยในงานด้านตรวจสอบภายใน               
+              </div>
+            </div>
+          </div>
+
+          <div class="logrow">
+            <div class="exp-dot-col">
+              <div class="exp-dot"></div>
+              <div class="exp-line"></div>
+            </div>
+            <div class="exp-body">
+              <div class="exp-year">Nov 2024</div>
+              <div class="logtitle">Returned to PEA</div>
+              <div class="logorg"> กทต.  ฝตท. สตภ. </div>
+              <button class="exp-toggle" onclick="toggleExp(this)">+ อ่านเพิ่มเติม</button>
+              <div class="exp-extra">
+                กลับเข้าปฏิบัติงานหลังสำเร็จการศึกษาระดับปริญญาโท ณ Monash University ประเทศออสเตรเลีย
+              </div>
+            </div>
+          </div>
+
+          <div class="logrow">
+            <div class="exp-dot-col">
+              <div class="exp-dot"></div>
+              <div class="exp-line"></div>
+            </div>
+            <div class="exp-body">
+              <div class="exp-year">Sep 2022 – Nov 2024</div>
+              <div class="logtitle">Overseas Scholarship — Master's Study</div>
+              <div class="logorg">Monash University · Melbourne, Australia</div>
+              <button class="exp-toggle" onclick="toggleExp(this)">+ อ่านเพิ่มเติม</button>
+              <div class="exp-extra">
+                ได้รับอนุมัติทุนการศึกษาระดับปริญญาโทต่างประเทศด้านเทคโนโลยีสารสนเทศ สาขา Business Analytics (Digital
+                Product Design) จาก PEA
+              </div>
+            </div>
+          </div>
+
+          <div class="logrow" style="margin-bottom:0">
+            <div class="exp-dot-col">
+              <div class="exp-dot"></div>
+            </div>
+            <div class="exp-body">
+              <div class="exp-year">Aug 2018</div>
+              <div class="logtitle">Internal Auditor Level 4</div>
+              <div class="logorg">กตผ.  ฝตล.  สตภ. </div>
+              <button class="exp-toggle" onclick="toggleExp(this)">+ อ่านเพิ่มเติม</button>
+              <div class="exp-extra">
+                บรรจุเข้าทำงานในตำแหน่งนักตรวจสอบภายในระดับ 4 กองตรวจสอบการผลิตและปฏิบัติการ
+                สำนักตรวจสอบภายใน การไฟฟ้าส่วนภูมิภาค
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ph-icon">🎓</div><span class="ph-title">Education</span><span class="ph-num">[04/04]</span>
+        </div>
+        <div class="pb">
+
+          <div class="edu-item">
+            <div class="edu-year">2024</div>
+            <div class="edu-body">
+              <div class="edu-degree">Master of Business Analytics</div>
+              <div class="edu-school">Monash University</div>
+              <div class="edu-country">🇦🇺 Melbourne, Australia</div>
+
+              <div class="edu-projects">
+                <div class="edu-proj-label">Capstone Projects</div>
+                <a class="edu-proj-item" href="https://092e0p-sasiwipha-srikueakun.shinyapps.io/Scope3_dashboard/" target="_blank" rel="noopener" title="เปิด Shiny dashboard">
+                  <span class="edu-proj-icon">↗</span>
+                  <span class="edu-proj-name">Interactive R Shiny Dashboard — Scope 3 Emissions Analysis</span>
+                </a>
+                <a class="edu-proj-item" href="https://github.com/Advanced-R-Programming/assignment-3-package-completion-ssri0048" target="_blank" rel="noopener" title="เปิด GitHub repository">
+                  <span class="edu-proj-icon">↗</span>
+                  <span class="edu-proj-name">Ten-Pin Bowling Scoring R Package (S3/vctrs, Multiplayer)</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="logdiv"></div>
+
+          <div class="edu-item">
+            <div class="edu-year">2013</div>
+            <div class="edu-body">
+              <div class="edu-degree">B.S. in Cooperative Economics</div>
+              <div class="edu-school">Kasetsart University</div>
+              <div class="edu-country">🇹🇭 Bangkok, Thailand</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- API/QUOTE panel แก้อีกที -->
+
+    <!-- BOTTOM GRID: 3 คอลัมน์ -->
+    <div class="bottom-grid">
+      <div class="panel">
+        <div class="ph">
+          <div class="ph-icon">✓</div><span class="ph-title">TRAINING &amp; CERTIFICATIONS</span>
+        </div>
+        <div class="pb">
+          <div class="cert-list">
+            <div class="cert">
+              <div class="cert-info">
+                <div class="cert-name">Practical IT Project Management Course</div>
+                <div class="cert-sub">NSTDA // MAR 2026</div>
+              </div>
+              <span class="cert-ok">CERTIFIED</span>
+            </div>
+            <div class="cert">
+              <div class="cert-info">
+                <div class="cert-name">Fraud Audit Training Course</div>
+                <div class="cert-sub">IIAT // 2025</div>
+              </div>
+              <span class="cert-ok">CERTIFIED</span>
+            </div>
+            <div class="cert">
+              <div class="cert-info">
+                <div class="cert-name">Bitkub AI Cafe: AI After Work</div>
+                <div class="cert-sub">BITKUB // APR 2026</div>
+              </div>
+              <span class="cert-ok">ATTENDED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ph-icon">◵</div><span class="ph-title">GETTING TO KNOW ME BETTER</span>
+        </div>
+        <div class="pb">
+
+          <div class="flavor-row">
+            <span class="flavor-icon">🎬</span>
+            <div class="flavor-body">
+              <div class="flavor-label">Entertainment Log</div>
+              <div class="flavor-tags">
+                <span class="ftag">The Evil Lawyer</span>
+                <span class="ftag">The Believers</span>
+                <span class="ftag">Now You See Me</span>
+                <span class="ftag">Bad Genius</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flavor-div"></div>
+
+          <div class="flavor-row">
+            <span class="flavor-icon">🎨</span>
+            <div class="flavor-body">
+              <div class="flavor-label">My Palette</div>
+              <div class="flavor-tags">
+                <span class="ftag" style="border-color:#4a90c4;color:#4a90c4">Blue</span>
+                <span class="ftag" style="border-color:#8b6347;color:#8b6347">Brown</span>
+                <span class="ftag" style="border-color:#5a8a5a;color:#5a8a5a">Green</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flavor-div"></div>
+
+          <div class="flavor-row">
+            <span class="flavor-icon">🍜</span>
+            <div class="flavor-body">
+              <div class="flavor-label">Fuel of Choice</div>
+              <div class="flavor-tags"><span class="ftag">Korean Food</span></div>
+            </div>
+          </div>
+
+          <div class="flavor-div"></div>
+
+          <div class="flavor-row" style="margin-bottom:0">
+            <span class="flavor-icon">🐕</span>
+            <div class="flavor-body">
+              <div class="flavor-label">Spirit Animal</div>
+              <div class="flavor-tags"><span class="ftag">Dog — loyal, curious, always ready</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div class="ph-icon">⊞</div><span class="ph-title">COMMUNICATION LINK</span>
+        </div>
+        <div class="pb" style="padding-bottom:0">
+          <div class="crow">
+            <div class="cico">✉</div>
+            <div>
+              <div class="clbl">PERSONAL EMAIL CHANNEL</div>
+              <div class="cval">ssrikuakoon@gmail.com</div>
+            </div>
+          </div>
+          <!-- <div class="crow">
+            <div class="cico">in</div>
+            <div>
+              <div class="clbl">LINKEDIN NODE</div>
+              <div class="cval">linkedin.com/in/yourname</div>
+            </div>
+          </div> --> 
+          <div class="crow">
+            <div class="cico">⌥</div>
+            <div>
+              <div class="clbl">GITHUB REPO</div>
+              <div class="cval">github.com/ssri0048</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLOSING QUOTE: กึ่งกลาง ไม่มีกรอบ (fetch มาโชว์ที่นี่) -->
+    <div class="closing-quote">
+      <div class="cq-mark">"</div>
+      <div class="cq-text" id="cqText">กำลังโหลด…</div>
+      <div class="cq-author" id="cqAuthor"></div>
+      <button class="cq-btn" id="cqBtn" onclick="loadQuote()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+        </svg>
+        New Quote
+      </button>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <span>GEMs#7 </span>
+      <span>ใช้สำหรับนำเสนอภายใน กฟภ. เท่านั้น </span>
+    </div>
+
+  </div><!-- /wrap -->
+
+  <script>
+    // ── 1. นาฬิกาเวลาไทย (UTC+7) real-time ──
+    function updateClock() {
+      const now = new Date();
+      const th = new Date(now.getTime() + 7 * 60 * 60 * 1000); // UTC+7
+      document.getElementById('clock').textContent = th.toISOString().slice(11, 19);
+      document.getElementById('fDate').textContent = th.toISOString().slice(0, 10);
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ── 2. Animate stat bars ตอนโหลดหน้า (0% → data-w%) ──
+    window.addEventListener('load', () => {
+      document.querySelectorAll('.sfill').forEach(bar => {
+        const target = bar.dataset.w + '%';
+        bar.style.width = '0%';
+        setTimeout(() => { bar.style.width = target; }, 300);
+      });
+    });
+
+    // ── 3. สลับธีม สว่าง/มืด ──
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light');
+      document.getElementById('lblDark').classList.toggle('active', !isLight);
+      document.getElementById('lblLight').classList.toggle('active', isLight);
+    }
+
+    // ── 4. แสดง/ซ่อนข้อมูลเพิ่มเติม (hero) ──
+    function toggleExtra() {
+      const box = document.getElementById('extraInfo');
+      const btn = document.getElementById('btnMore');
+      const open = box.classList.toggle('show');
+      btn.textContent = open ? '[ − ซ่อนข้อมูล ]' : '[ + ดูข้อมูลเพิ่มเติม ]';
+    }
+
+    // ── 5. แสดง/ซ่อนรายละเอียด Experience ──
+    function toggleExp(btn) {
+      const extra = btn.nextElementSibling;
+      const isOpen = extra.classList.toggle('open');
+      btn.textContent = isOpen ? '− ซ่อน' : '+ อ่านเพิ่มเติม';
+    }
+
+    // ── 6. fetch() Public API — Closing Quote ──
+    function loadQuote() {
+      const textEl = document.getElementById('cqText');
+      const authorEl = document.getElementById('cqAuthor');
+      const btn = document.getElementById('cqBtn');
+      btn.disabled = true;
+      textEl.style.opacity = '0.3';
+      fetch('https://dummyjson.com/quotes/random')
+        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        .then(data => {
+          textEl.textContent = data.quote || '';
+          authorEl.textContent = data.author ? '— ' + data.author : '';
+        })
+        .catch(() => { textEl.textContent = ''; authorEl.textContent = ''; })
+        .finally(() => { textEl.style.opacity = '1'; btn.disabled = false; });
+    }
+    loadQuote();
+  </script>
+</body>
+
+</html>
